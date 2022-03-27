@@ -6,9 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased v2.x]
 
+### Added
+
+- Documentation on paginated responses
+- Throw custom exception is client is missing
+
 ### Changed
 
+- Rework paginated responses
 - (dev) Update version and rules of PHP-CS-Fixer and PHPStan
+
+### Deprecated
+
+- `\MacFJA\RediSearch\Redis\Response\AggregateResponseItem::getValue` (use `\MacFJA\RediSearch\Redis\Response\AggregateResponseItem::getFieldValue` instead)
 
 ## [2.1.1]
 

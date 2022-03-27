@@ -33,6 +33,9 @@ class AmpRedisClient extends AbstractClient
     /** @var Redis */
     private $redis;
 
+    /**
+     * @codeCoverageIgnore
+     */
     private function __construct(Redis $redis)
     {
         if (!static::supports($redis)) {
@@ -77,6 +80,9 @@ class AmpRedisClient extends AbstractClient
         }, $commands);
     }
 
+    /**
+     * @codeCoverageIgnore
+     */
     protected function doPipeline(Command ...$commands): array
     {
         return [];
