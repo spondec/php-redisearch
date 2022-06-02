@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace MacFJA\RediSearch;
 
+use MacFJA\RediSearch\Redis\Command\AddDocument;
+use MacFJA\RediSearch\Redis\Command\AddDocumentCommand\PropertiesOption;
 use function count;
 use function is_array;
 use function is_string;
@@ -67,21 +69,21 @@ class Index
      */
     public function addDocumentFromArray(array $properties, ?string $hash = null): string
     {
-        $prefixes = $this->info->getIndexDefinition('prefixes');
-        $prefix = '';
-        if (is_array($prefixes) && count($prefixes) > 0) {
-            $prefix = (string) reset($prefixes);
-        }
-        $documentId = is_string($hash) ? $hash : uniqid($prefix, true);
-        $query = [$documentId];
-        foreach ($properties as $name => $value) {
-            $query[] = $name;
-            $query[] = $value;
-        }
+        $query = $this->getAddDocumentQuery($hash, $properties);
 
         $this->client->executeRaw('hset', ...$query);
 
-        return $documentId;
+        return $query[0];
+    }
+
+    public function newDocumentCommand(array $properties, ?string $hash = null): AddDocument
+    {
+        $query = $this->getAddDocumentQuery($hash, $properties);
+
+        $document = new AddDocument();
+        $document->setArguments($query);
+
+        return $document;
     }
 
     public function deleteDocument(string $hash): bool
@@ -96,39 +98,37 @@ class Index
         $command = new Alter($this->version);
         $command
             ->setIndex($this->index)
-            ->addField($field)
-        ;
+            ->addField($field);
 
-        return 'OK' === (string) $this->client->execute($command);
+        return 'OK' === (string)$this->client->execute($command);
     }
 
     public function delete(bool $withDocuments = false): bool
     {
         $command = new DropIndex($this->version);
         $command->setIndex($this->index)
-            ->setDeleteDocument($withDocuments)
-        ;
+            ->setDeleteDocument($withDocuments);
 
-        return 'OK' === (string) $this->client->execute($command);
+        return 'OK' === (string)$this->client->execute($command);
     }
 
     public function addAlias(string $alias): bool
     {
-        return 'OK' === (string) $this->client->execute(
-            (new AliasAdd($this->version))
-                ->setIndex($this->index)
-                ->setAlias($alias)
-        );
+        return 'OK' === (string)$this->client->execute(
+                (new AliasAdd($this->version))
+                    ->setIndex($this->index)
+                    ->setAlias($alias)
+            );
     }
 
     public function updateAlias(string $alias): bool
     {
-        return 'OK' === (string) $this->client->execute((new AliasUpdate($this->version))->setIndex($this->index)->setAlias($alias));
+        return 'OK' === (string)$this->client->execute((new AliasUpdate($this->version))->setIndex($this->index)->setAlias($alias));
     }
 
     public function deleteAlias(string $alias): bool
     {
-        return 'OK' === (string) $this->client->execute((new AliasDel($this->version))->setAlias($alias));
+        return 'OK' === (string)$this->client->execute((new AliasDel($this->version))->setAlias($alias));
     }
 
     /**
@@ -144,5 +144,23 @@ class Index
         $this->info = $this->client->execute((new Info($this->version))->setIndex($this->index));
 
         return $this->info;
+    }
+
+    protected function getAddDocumentQuery(?string $hash, array $properties): array
+    {
+        $prefixes = $this->info->getIndexDefinition('prefixes');
+        $prefix = '';
+        if (is_array($prefixes) && count($prefixes) > 0)
+        {
+            $prefix = (string)reset($prefixes);
+        }
+        $documentId = is_string($hash) ? $hash : uniqid($prefix, true);
+        $query = [$documentId];
+        foreach ($properties as $name => $value)
+        {
+            $query[] = $name;
+            $query[] = $value;
+        }
+        return $query;
     }
 }
